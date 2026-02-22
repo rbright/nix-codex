@@ -54,7 +54,26 @@ rustPlatform.buildRustPackage (finalAttrs: {
       lib.optionals stdenv.cc.isGNU [ "-Wno-error=stringop-overflow" ]
       ++ lib.optionals stdenv.cc.isClang [ "-Wno-error=character-conversion" ]
     );
+
+    # Upstream release profile uses fat LTO + single codegen unit, which is
+    # expensive on GitHub Actions runners.
+    CARGO_PROFILE_RELEASE_LTO = "off";
+    CARGO_PROFILE_RELEASE_CODEGEN_UNITS = "16";
   };
+
+  cargoBuildFlags = [
+    "--package"
+    "codex-cli"
+    "--bin"
+    "codex"
+  ];
+
+  cargoInstallFlags = [
+    "--package"
+    "codex-cli"
+    "--bin"
+    "codex"
+  ];
 
   doCheck = false;
 
