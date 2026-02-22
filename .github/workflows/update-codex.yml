@@ -139,9 +139,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if git diff --quiet -- package.nix; then
+          if git diff --quiet -- package.nix Cargo.lock; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "No changes detected in package.nix; skipping PR."
+            echo "No changes detected in package.nix/Cargo.lock; skipping PR."
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
@@ -176,6 +176,7 @@ jobs:
             This PR updates:
             - `version`
             - `src.hash`
+            - `Cargo.lock`
 
       - name: Enable auto-merge
         if: steps.cpr.outputs.pull-request-number != ''

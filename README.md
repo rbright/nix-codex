@@ -2,8 +2,9 @@
 
 [![CI](https://github.com/rbright/nix-codex/actions/workflows/ci.yml/badge.svg)](https://github.com/rbright/nix-codex/actions/workflows/ci.yml)
 
-Standalone Nix flake packaging for `codex` (from
-[`openai/codex`](https://github.com/openai/codex)).
+Nix package for Codex CLI.
+
+Source: [`openai/codex`](https://github.com/openai/codex).
 
 ## What this repo provides
 
@@ -51,20 +52,23 @@ just update v0.104.0
 just update rust-v0.104.0
 ```
 
-`./scripts/update-package.sh` updates both pinned values in `package.nix`:
+`./scripts/update-package.sh` updates:
 
 - `version`
 - `src.hash`
+- `Cargo.lock` (from upstream `codex-rs`)
 
 Only full release versions are accepted (`X.Y.Z`). Pre-release tags (for example
 `rust-v0.105.0-alpha.1`) are ignored/rejected.
 
 ### Updater prerequisites
 
+- `curl`
 - `git`
 - `jq`
 - `nix`
 - `perl`
+- `tar`
 
 Check script usage:
 

@@ -29,7 +29,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
 
   sourceRoot = "${finalAttrs.src.name}/codex-rs";
   cargoLock = {
-    lockFile = "${finalAttrs.src}/codex-rs/Cargo.lock";
+    lockFile = ./Cargo.lock;
     allowBuiltinFetchGit = true;
   };
 

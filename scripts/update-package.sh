@@ -71,15 +71,20 @@ repo_owner="${CODEX_REPO_OWNER:-openai}"
 repo_name="${CODEX_REPO_NAME:-codex}"
 tag_prefix="${CODEX_TAG_PREFIX:-rust-v}"
 
+require_cmd curl
 require_cmd git
 require_cmd jq
 require_cmd nix
 require_cmd perl
+require_cmd tar
 
 if [[ ! -f "$target_file" ]]; then
   echo "Target file not found: $target_file" >&2
   exit 1
 fi
+
+target_dir="$(cd -- "$(dirname -- "$target_file")" && pwd)"
+lock_file="${target_dir}/Cargo.lock"
 
 if [[ -z "$version" ]]; then
   latest_tag="$(
@@ -129,9 +134,24 @@ if [[ ! "$source_hash" =~ ^sha256- ]]; then
   exit 1
 fi
 
+tmpdir="$(mktemp -d)"
+trap 'rm -rf "$tmpdir"' EXIT
+
+curl -fsSL "$source_url" -o "$tmpdir/source.tar.gz"
+tar -xzf "$tmpdir/source.tar.gz" -C "$tmpdir"
+
+source_lockfile="$(find "$tmpdir" -maxdepth 3 -type f -path '*/codex-rs/Cargo.lock' | head -n1)"
+if [[ -z "$source_lockfile" ]]; then
+  echo "Could not find codex-rs/Cargo.lock in fetched source archive" >&2
+  exit 1
+fi
+
+cp "$source_lockfile" "$lock_file"
+
 VERSION="$version" perl -0pi -e 's/(\n\s*version = )"[^"]+";/$1 . "\"" . $ENV{VERSION} . "\";"/e' "$target_file"
 SOURCE_HASH="$source_hash" perl -0pi -e 's/(src = fetchFromGitHub \{.*?\n\s*hash = )"sha256-[^"]+";/$1 . "\"" . $ENV{SOURCE_HASH} . "\";"/se' "$target_file"
 
 echo "Updated: $target_file"
-echo "  version:  $version"
-echo "  src.hash: $source_hash"
+echo "  version:   $version"
+echo "  src.hash:  $source_hash"
+echo "  lock file: $lock_file"

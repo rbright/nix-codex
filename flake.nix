@@ -1,5 +1,5 @@
 {
-  description = "nix-codex: standalone Nix package for codex";
+  description = "Nix package for Codex CLI";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
