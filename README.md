@@ -83,7 +83,9 @@ Workflow: `.github/workflows/update-codex.yml`
 - Runs every 6 hours and on manual dispatch.
 - Detects the latest stable upstream `rust-vX.Y.Z` tag from `openai/codex`.
 - Ignores pre-release tags (alpha/beta/rc) and rejects non-`X.Y.Z` manual overrides.
-- If newer than `package.nix`, runs `scripts/update-package.sh` and opens/updates a PR.
+- If newer than `package.nix`, runs `scripts/update-package.sh`, then runs `just validate-update` before opening/updating a PR.
+- `just validate-update` performs lightweight linting plus `nix build --dry-run 'path:.#codex'`.
+- Leaves the full `just build` compile to the normal PR CI workflow.
 - Enables auto-merge (`squash`) for that PR.
 
 ### One-time repository setup

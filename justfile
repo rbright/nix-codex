@@ -32,6 +32,11 @@ lint-shell:
 build:
     nix build -L '{{ tooling_flake }}#codex'
 
+# Lightweight validation for the automated updater workflow.
+validate-update: fmt-check lint
+    nix build --dry-run -L '{{ tooling_flake }}#codex'
+    @echo "✅ update validation passed"
+
 # Run package with forwarded args.
 run *args='--help':
     nix run '{{ tooling_flake }}#codex' -- {{ args }}

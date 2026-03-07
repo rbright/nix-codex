@@ -146,16 +146,12 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Validate update
+      - name: Validate update metadata
         if: steps.changes.outputs.changed == 'true'
         shell: bash
         run: |
           set -euo pipefail
-          nix develop 'path:.' -c bash -euo pipefail -c '
-            just fmt-check
-            just lint
-            just build
-          '
+          nix develop 'path:.' -c just validate-update
 
       - name: Create or update pull request
         if: steps.changes.outputs.changed == 'true'
