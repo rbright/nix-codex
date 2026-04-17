@@ -34,13 +34,13 @@ let
 in
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "codex";
-  version = "0.121.0";
+  version = "0.122.0";
 
   src = fetchFromGitHub {
     owner = "openai";
     repo = "codex";
     tag = "rust-v${finalAttrs.version}";
-    hash = "sha256-wjiUMox9V5tFggNgaFyHXWhRlpPerK7W+U/eR2Ddbbc=";
+    hash = "sha256-bjyEWYnUOP+GgaqymTf4AED00Mdb/sNdO3pptyLwh40=";
   };
 
   sourceRoot = "${finalAttrs.src.name}/codex-rs";
