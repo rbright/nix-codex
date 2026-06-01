@@ -18,16 +18,17 @@
   installShellCompletions ? stdenv.buildPlatform.canExecute stdenv.hostPlatform,
 }:
 let
+  rustyV8Version = "147.4.0";
   rustyV8Archive =
     if stdenv.hostPlatform.system == "x86_64-linux" then
       fetchurl {
-        url = "https://github.com/denoland/rusty_v8/releases/download/v146.4.0/librusty_v8_release_x86_64-unknown-linux-gnu.a.gz";
-        hash = "sha256-5ktNmeSuKTouhGJEqJuAF4uhA4LBP7WRwfppaPUpEVM=";
+        url = "https://github.com/denoland/rusty_v8/releases/download/v${rustyV8Version}/librusty_v8_release_x86_64-unknown-linux-gnu.a.gz";
+        hash = "sha256-Cd3vbFEZKv/wVBExoO+cAPgxhdI5HaqxgDgqOr82rJU=";
       }
     else if stdenv.hostPlatform.system == "aarch64-linux" then
       fetchurl {
-        url = "https://github.com/denoland/rusty_v8/releases/download/v146.4.0/librusty_v8_release_aarch64-unknown-linux-gnu.a.gz";
-        hash = "sha256-2/FlsHyBvbBUvARrQ9I+afz3vMGkwbW0d2mDpxBi7Ng=";
+        url = "https://github.com/denoland/rusty_v8/releases/download/v${rustyV8Version}/librusty_v8_release_aarch64-unknown-linux-gnu.a.gz";
+        hash = "sha256-lMPw/eAFFAT8obaR8opJbXjbgw58+0maBEyxpeOllFU=";
       }
     else
       throw "Unsupported platform for codex rusty_v8 archive: ${stdenv.hostPlatform.system}";
@@ -47,6 +48,10 @@ rustPlatform.buildRustPackage (finalAttrs: {
   cargoLock = {
     lockFile = ./Cargo.lock;
     allowBuiltinFetchGit = true;
+    extraRegistries = {
+      # Avoid crates.io API downloads, which have been flaky in GitHub Actions.
+      "https://github.com/rust-lang/crates.io-index" = "https://static.crates.io/crates";
+    };
   };
 
   nativeBuildInputs = [
@@ -63,6 +68,13 @@ rustPlatform.buildRustPackage (finalAttrs: {
     libcap
     openssl
   ];
+
+  preBuild = ''
+    # extraRegistries is needed only while Nix fetches crates. The generated
+    # Cargo config duplicates crates-io, so remove that stanza before build.
+    find /build -maxdepth 4 -path '*/.cargo/config.toml' -exec \
+      sed -i '/^[[:space:]]*\[source\."https:\/\/github\.com\/rust-lang\/crates\.io-index"\]$/,+2d' {} \;
+  '';
 
   env = {
     LIBCLANG_PATH = "${lib.getLib libclang}/lib";
