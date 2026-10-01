@@ -11,7 +11,7 @@ Source: [`openai/codex`](https://github.com/openai/codex).
 - Nix package: `codex` (binary: `codex`)
 - Nix app output: `.#codex`
 - Scripted updater for version/source hash pin refresh
-- Scheduled GitHub Actions updater that opens auto-mergeable PRs
+- Scheduled GitHub Actions updater that opens update PRs and merges them after CI passes
 - Automated GitHub release creation on `codex` version bumps
 - Local quality gate (`just`) and GitHub Actions CI
 
@@ -86,7 +86,7 @@ Workflow: `.github/workflows/update-codex.yml`
 - If newer than `package.nix`, runs `scripts/update-package.sh`, then runs `just validate-update` before opening/updating a PR.
 - `just validate-update` performs lightweight linting plus `nix build --dry-run 'path:.#codex'`.
 - Leaves the full `just build` compile to the normal PR CI workflow.
-- Enables auto-merge (`squash`) for that PR.
+- Waits for the PR `CI` run on the PR head commit, then squash-merges that commit. A failed CI run fails the updater and leaves the PR open.
 
 ### One-time repository setup
 
@@ -96,7 +96,7 @@ Workflow: `.github/workflows/update-codex.yml`
 2. In repository settings → **Actions → General**:
    - Set workflow permissions to **Read and write permissions**.
    - Enable **Allow GitHub Actions to create and approve pull requests**.
-3. Ensure branch protection/required checks allow auto-merge after CI passes.
+3. No branch protection is required. The updater waits for CI itself.
 
 Manual trigger:
 
