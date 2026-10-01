@@ -11,6 +11,7 @@ on:
         type: string
 
 permissions:
+  actions: read
   contents: write
   pull-requests: write
 
@@ -115,7 +116,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ -z "${CODEX_UPDATER_TOKEN}" ]]; then
-            echo "CODEX_UPDATER_TOKEN secret is required to create PRs and enable auto-merge." >&2
+            echo "CODEX_UPDATER_TOKEN secret is required to create and merge PRs." >&2
             exit 1
           fi
 
@@ -174,10 +175,46 @@ jobs:
             - `src.hash`
             - `Cargo.lock`
 
-      - name: Enable auto-merge
+      # main has no required status checks, so GitHub auto-merge cannot wait for CI:
+      # it rejects pending PRs ("unstable status") and merges clean PRs immediately.
+      # Wait for the PR CI run on the exact head commit, then merge that commit.
+      - name: Merge pull request after CI passes
         if: steps.cpr.outputs.pull-request-number != ''
-        uses: peter-evans/enable-pull-request-automerge@v3
-        with:
-          token: ${{ secrets.CODEX_UPDATER_TOKEN }}
-          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
-          merge-method: squash
+        shell: bash
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          CODEX_UPDATER_TOKEN: ${{ secrets.CODEX_UPDATER_TOKEN }}
+          HEAD_SHA: ${{ steps.cpr.outputs.pull-request-head-sha }}
+          PULL_REQUEST_NUMBER: ${{ steps.cpr.outputs.pull-request-number }}
+        run: |
+          set -euo pipefail
+
+          run_id=""
+          for _ in $(seq 1 60); do
+            run_id="$(
+              gh run list \
+                --workflow ci.yml \
+                --event pull_request \
+                --commit "${HEAD_SHA}" \
+                --limit 1 \
+                --json databaseId \
+                --jq '.[0].databaseId // empty'
+            )"
+            if [[ -n "${run_id}" ]]; then
+              break
+            fi
+            sleep 10
+          done
+
+          if [[ -z "${run_id}" ]]; then
+            echo "No CI run found for PR #${PULL_REQUEST_NUMBER} at ${HEAD_SHA}." >&2
+            exit 1
+          fi
+
+          echo "Waiting for CI run ${run_id} on ${HEAD_SHA}."
+          gh run watch "${run_id}" --exit-status --interval 60
+
+          GH_TOKEN="${CODEX_UPDATER_TOKEN}" gh pr merge "${PULL_REQUEST_NUMBER}" \
+            --squash \
+            --match-head-commit "${HEAD_SHA}"
