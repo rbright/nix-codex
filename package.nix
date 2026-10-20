@@ -54,6 +54,13 @@ rustPlatform.buildRustPackage (finalAttrs: {
     };
   };
 
+  # Build with the repository Cargo.lock, which may carry security bumps
+  # before an upstream release does (for example rustls-webpki and
+  # webpki-roots for the eMudhra intermediate CA compromise).
+  postPatch = ''
+    cp ${./Cargo.lock} Cargo.lock
+  '';
+
   nativeBuildInputs = [
     clang
     cmake
