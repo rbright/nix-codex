@@ -18,30 +18,30 @@
   installShellCompletions ? stdenv.buildPlatform.canExecute stdenv.hostPlatform,
 }:
 let
-  rustyV8Version = "150.4.0";
+  rustyV8Version = "152.2.0";
   rustyV8Archive =
     if stdenv.hostPlatform.system == "x86_64-linux" then
       fetchurl {
         url = "https://github.com/denoland/rusty_v8/releases/download/v${rustyV8Version}/librusty_v8_release_x86_64-unknown-linux-gnu.a.gz";
-        hash = "sha256-WGn9twcbHyHyAKl86X0gElh34PMc2ALtmd4sU/SIsGw=";
+        hash = "sha256-tmg+mvy3f72MssOs9F001SApqyFrMyUiyVF5wS8P7Tw=";
       }
     else if stdenv.hostPlatform.system == "aarch64-linux" then
       fetchurl {
         url = "https://github.com/denoland/rusty_v8/releases/download/v${rustyV8Version}/librusty_v8_release_aarch64-unknown-linux-gnu.a.gz";
-        hash = "sha256-txd9Uq0zNycv4NO453gjnIIalcJdWVnexiue/WVPfdM=";
+        hash = "sha256-xAGWu/GCUy5YP2W32vAZb9uzNU5vrFmzHQU5wg+THz0=";
       }
     else
       throw "Unsupported platform for codex rusty_v8 archive: ${stdenv.hostPlatform.system}";
 in
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "codex";
-  version = "0.163.0";
+  version = "0.164.0";
 
   src = fetchFromGitHub {
     owner = "openai";
     repo = "codex";
     tag = "rust-v${finalAttrs.version}";
-    hash = "sha256-Fa9dfiGJy+uqSF4A0EM6AQQhhjQdu+jfhKzqXid9PNA=";
+    hash = "sha256-iib2+qQcGewC4Ga8cA80sInDJpzdSxDJP0y1DDOouI4=";
   };
 
   sourceRoot = "${finalAttrs.src.name}/codex-rs";
