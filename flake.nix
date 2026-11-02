@@ -36,6 +36,13 @@
           rustc = rustToolchain;
         };
         codex = pkgs.callPackage ./package.nix { inherit rustPlatform; };
+        codexApp = {
+          type = "app";
+          program = "${codex}/bin/codex";
+          meta = {
+            description = "Run codex";
+          };
+        };
       in
       {
         packages = {
@@ -44,20 +51,8 @@
         };
 
         apps = {
-          codex = {
-            type = "app";
-            program = "${codex}/bin/codex";
-            meta = {
-              description = "Run codex";
-            };
-          };
-          default = {
-            type = "app";
-            program = "${codex}/bin/codex";
-            meta = {
-              description = "Run codex";
-            };
-          };
+          codex = codexApp;
+          default = codexApp;
         };
 
         devShells.default = pkgs.mkShell {
