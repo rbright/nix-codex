@@ -32,6 +32,12 @@ let
       }
     else
       throw "Unsupported platform for codex rusty_v8 archive: ${stdenv.hostPlatform.system}";
+  cargoFlags = [
+    "--package"
+    "codex-cli"
+    "--bin"
+    "codex"
+  ];
 in
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "codex";
@@ -106,19 +112,8 @@ rustPlatform.buildRustPackage (finalAttrs: {
     CARGO_PROFILE_RELEASE_CODEGEN_UNITS = "16";
   };
 
-  cargoBuildFlags = [
-    "--package"
-    "codex-cli"
-    "--bin"
-    "codex"
-  ];
-
-  cargoInstallFlags = [
-    "--package"
-    "codex-cli"
-    "--bin"
-    "codex"
-  ];
+  cargoBuildFlags = cargoFlags;
+  cargoInstallFlags = cargoFlags;
 
   doCheck = false;
 

@@ -10,7 +10,7 @@ Source: [`openai/codex`](https://github.com/openai/codex).
 
 - Nix package: `codex` (binary: `codex`)
 - Nix app output: `.#codex`
-- Scripted updater for version/source hash pin refresh
+- Scripted updater for the version, hash, and `Cargo.lock` pins
 - Scheduled GitHub Actions updater that opens update PRs and merges them after CI passes
 - Automated GitHub release creation on `codex` version bumps
 - Local quality gate (`just`) and GitHub Actions CI
@@ -57,18 +57,18 @@ just update rust-v0.104.0
 - `version`
 - `src.hash`
 - `Cargo.lock` (from upstream `codex-rs`)
+- `rustyV8Version` and its per-system `librusty_v8` archive hashes (from the `v8` crate in `Cargo.lock`)
 
 Only full release versions are accepted (`X.Y.Z`). Pre-release tags (for example
 `rust-v0.105.0-alpha.1`) are ignored/rejected.
 
 ### Updater prerequisites
 
-- `curl`
+- `awk`
 - `git`
 - `jq`
 - `nix`
 - `perl`
-- `tar`
 
 Check script usage:
 
@@ -101,7 +101,7 @@ Workflow: `.github/workflows/update-codex.yml`
 Manual trigger:
 
 - Actions → **Update codex package** → **Run workflow**
-- Optional input: `version` (accepts `0.x.y`, `v0.x.y`, or `rust-v0.x.y`)
+- Optional input: `version` (accepts `X.Y.Z`, `vX.Y.Z`, or `rust-vX.Y.Z`)
 
 ## Automated GitHub releases
 
@@ -142,7 +142,7 @@ just check
       modules = [
         ({ pkgs, ... }: {
           environment.systemPackages = [
-            nixCodex.packages.${pkgs.system}.codex
+            nixCodex.packages.${pkgs.stdenv.hostPlatform.system}.codex
           ];
         })
       ];
