@@ -19,24 +19,46 @@
 }:
 let
   rustyV8Version = "152.2.0";
-  rustyV8Archive =
+  # codex-code-mode-host enables the V8 sandbox (ptrcomp_sandbox). Only the
+  # openai/codex rusty-v8 release publishes that archive and its binding.
+  rustyV8Release = "https://github.com/openai/codex/releases/download/rusty-v8-v${rustyV8Version}";
+  rustyV8Artifacts =
     if stdenv.hostPlatform.system == "x86_64-linux" then
-      fetchurl {
-        url = "https://github.com/denoland/rusty_v8/releases/download/v${rustyV8Version}/librusty_v8_release_x86_64-unknown-linux-gnu.a.gz";
-        hash = "sha256-tmg+mvy3f72MssOs9F001SApqyFrMyUiyVF5wS8P7Tw=";
+      {
+        archive = fetchurl {
+          url = "${rustyV8Release}/librusty_v8_ptrcomp_sandbox_release_x86_64-unknown-linux-gnu.a.gz";
+          hash = "sha256-s7SQ8qqAntp/ascn+FH7AM6DVb5ygnV3z6rCjHE3280=";
+        };
+        binding = fetchurl {
+          url = "${rustyV8Release}/src_binding_ptrcomp_sandbox_release_x86_64-unknown-linux-gnu.rs";
+          hash = "sha256-Pk1f7Nvg+YpgF+adfKglGad/sDLF615M2+zdPi7FGdU=";
+        };
       }
     else if stdenv.hostPlatform.system == "aarch64-linux" then
-      fetchurl {
-        url = "https://github.com/denoland/rusty_v8/releases/download/v${rustyV8Version}/librusty_v8_release_aarch64-unknown-linux-gnu.a.gz";
-        hash = "sha256-xAGWu/GCUy5YP2W32vAZb9uzNU5vrFmzHQU5wg+THz0=";
+      {
+        archive = fetchurl {
+          url = "${rustyV8Release}/librusty_v8_ptrcomp_sandbox_release_aarch64-unknown-linux-gnu.a.gz";
+          hash = "sha256-EFRGSmIwBs314lriCHcAK/PtuaLC8+ZPRKhxR0KxXoc=";
+        };
+        binding = fetchurl {
+          url = "${rustyV8Release}/src_binding_ptrcomp_sandbox_release_aarch64-unknown-linux-gnu.rs";
+          hash = "sha256-Pk1f7Nvg+YpgF+adfKglGad/sDLF615M2+zdPi7FGdU=";
+        };
       }
     else
       throw "Unsupported platform for codex rusty_v8 archive: ${stdenv.hostPlatform.system}";
+
+  # Codex spawns codex-code-mode-host from the directory of its own
+  # executable. Without it, Code Mode fails and no turn can call a tool.
   cargoFlags = [
     "--package"
     "codex-cli"
     "--bin"
     "codex"
+    "--package"
+    "codex-code-mode-host"
+    "--bin"
+    "codex-code-mode-host"
   ];
 in
 rustPlatform.buildRustPackage (finalAttrs: {
@@ -103,8 +125,9 @@ rustPlatform.buildRustPackage (finalAttrs: {
     );
 
     # rust-v0.118.0 pulled in rusty_v8, whose build script otherwise attempts
-    # a network download that fails inside Nix sandboxed builds.
-    RUSTY_V8_ARCHIVE = rustyV8Archive;
+    # network downloads that fail inside Nix sandboxed builds.
+    RUSTY_V8_ARCHIVE = rustyV8Artifacts.archive;
+    RUSTY_V8_SRC_BINDING_PATH = rustyV8Artifacts.binding;
 
     # Upstream release profile uses fat LTO + single codegen unit, which is
     # expensive on GitHub Actions runners.
