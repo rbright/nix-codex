@@ -216,8 +216,8 @@ if [[ -z "$rusty_v8_version" ]]; then
 fi
 
 prefetch_rusty_v8_hash() {
-  local arch="$1"
-  local url="https://github.com/denoland/rusty_v8/releases/download/v${rusty_v8_version}/librusty_v8_release_${arch}-unknown-linux-gnu.a.gz"
+  local file_name="$1"
+  local url="https://github.com/openai/codex/releases/download/rusty-v8-v${rusty_v8_version}/${file_name}"
   local hash
   hash="$(nix store prefetch-file --json "$url" | jq -r '.hash')"
 
@@ -227,6 +227,14 @@ prefetch_rusty_v8_hash() {
   fi
 
   printf '%s' "$hash"
+}
+
+# Replace the hash on the line after the fetchurl URL that ends in file_name.
+replace_rusty_v8_hash() {
+  local file_name="$1"
+  local hash="$2"
+
+  FILE_NAME="$file_name" HASH="$hash" perl -0pi -e 's/(\Q$ENV{FILE_NAME}\E";\n\s*hash = )"sha256-[^"]+";/$1 . "\"" . $ENV{HASH} . "\";"/e' "$target_file"
 }
 
 refresh_cargo_hash_if_present() {
@@ -261,15 +269,26 @@ refresh_cargo_hash_if_present() {
   CARGO_HASH="$cargo_hash" perl -0pi -e 's/(\n\s*(?:cargoHash|vendorHash) = )(?:lib\.fakeHash|"sha256-[^"]+");/$1 . "\"" . $ENV{CARGO_HASH} . "\";"/e' "$target_file"
 }
 
-echo "Prefetching rusty_v8 archives for v${rusty_v8_version}"
-rusty_v8_x86_64_hash="$(prefetch_rusty_v8_hash x86_64)"
-rusty_v8_aarch64_hash="$(prefetch_rusty_v8_hash aarch64)"
+rusty_v8_files=()
+for arch in x86_64 aarch64; do
+  rusty_v8_files+=(
+    "librusty_v8_ptrcomp_sandbox_release_${arch}-unknown-linux-gnu.a.gz"
+    "src_binding_ptrcomp_sandbox_release_${arch}-unknown-linux-gnu.rs"
+  )
+done
+
+echo "Prefetching rusty_v8 artifacts for v${rusty_v8_version}"
+declare -A rusty_v8_hashes=()
+for file_name in "${rusty_v8_files[@]}"; do
+  rusty_v8_hashes["$file_name"]="$(prefetch_rusty_v8_hash "$file_name")"
+done
 
 VERSION="$version" perl -0pi -e 's/(\n\s*version = )"[^"]+";/$1 . "\"" . $ENV{VERSION} . "\";"/e' "$target_file"
 SOURCE_HASH="$source_hash" perl -0pi -e 's/(src = fetchFromGitHub \{.*?\n\s*hash = )"sha256-[^"]+";/$1 . "\"" . $ENV{SOURCE_HASH} . "\";"/se' "$target_file"
 RUSTY_V8_VERSION="$rusty_v8_version" perl -0pi -e 's/(\n\s*rustyV8Version = )"[^"]+";/$1 . "\"" . $ENV{RUSTY_V8_VERSION} . "\";"/e' "$target_file"
-RUSTY_V8_X86_64_HASH="$rusty_v8_x86_64_hash" perl -0pi -e 's/(librusty_v8_release_x86_64-unknown-linux-gnu\.a\.gz";\n\s*hash = )"sha256-[^"]+";/$1 . "\"" . $ENV{RUSTY_V8_X86_64_HASH} . "\";"/e' "$target_file"
-RUSTY_V8_AARCH64_HASH="$rusty_v8_aarch64_hash" perl -0pi -e 's/(librusty_v8_release_aarch64-unknown-linux-gnu\.a\.gz";\n\s*hash = )"sha256-[^"]+";/$1 . "\"" . $ENV{RUSTY_V8_AARCH64_HASH} . "\";"/e' "$target_file"
+for file_name in "${rusty_v8_files[@]}"; do
+  replace_rusty_v8_hash "$file_name" "${rusty_v8_hashes[$file_name]}"
+done
 refresh_cargo_hash_if_present
 
 echo "Updated: $target_file"
@@ -277,5 +296,6 @@ echo "  version:              $version"
 echo "  src.hash:             $source_hash"
 echo "  lock file:            $lock_file"
 echo "  rusty_v8 version:     $rusty_v8_version"
-echo "  rusty_v8 x86_64 hash: $rusty_v8_x86_64_hash"
-echo "  rusty_v8 aarch64 hash: $rusty_v8_aarch64_hash"
+for file_name in "${rusty_v8_files[@]}"; do
+  echo "  ${file_name}: ${rusty_v8_hashes[$file_name]}"
+done

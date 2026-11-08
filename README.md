@@ -8,7 +8,7 @@ Source: [`openai/codex`](https://github.com/openai/codex).
 
 ## What this repo provides
 
-- Nix package: `codex` (binary: `codex`)
+- Nix package: `codex` (binaries: `codex` and its Code Mode host `codex-code-mode-host`)
 - Nix app output: `.#codex`
 - Scripted updater for the version, hash, and `Cargo.lock` pins
 - Scheduled GitHub Actions updater that opens update PRs and merges them after CI passes
@@ -57,7 +57,7 @@ just update rust-v0.104.0
 - `version`
 - `src.hash`
 - `Cargo.lock` (from upstream `codex-rs`)
-- `rustyV8Version` and its per-system `librusty_v8` archive hashes (from the `v8` crate in `Cargo.lock`)
+- `rustyV8Version` and its per-system V8 sandbox archive and binding hashes from the `openai/codex` `rusty-v8-v<version>` release (the version comes from the `v8` crate in `Cargo.lock`)
 
 Only full release versions are accepted (`X.Y.Z`). Pre-release tags (for example
 `rust-v0.105.0-alpha.1`) are ignored/rejected.
