@@ -133,6 +133,11 @@ rustPlatform.buildRustPackage (finalAttrs: {
     # expensive on GitHub Actions runners.
     CARGO_PROFILE_RELEASE_LTO = "off";
     CARGO_PROFILE_RELEASE_CODEGEN_UNITS = "16";
+
+    # Upstream release profile emits line-table debuginfo, which the fixup
+    # strip removes anyway. It grows the build dir from ~10 GB to ~16 GB, and
+    # GitHub runners lost the build to resource starvation at final link.
+    CARGO_PROFILE_RELEASE_DEBUG = "none";
   };
 
   cargoBuildFlags = cargoFlags;
