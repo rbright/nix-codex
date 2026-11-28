@@ -234,7 +234,7 @@ replace_rusty_v8_hash() {
   local file_name="$1"
   local hash="$2"
 
-  FILE_NAME="$file_name" HASH="$hash" perl -0pi -e 's/(\Q$ENV{FILE_NAME}\E";\n\s*hash = )"sha256-[^"]+";/$1 . "\"" . $ENV{HASH} . "\";"/e' "$target_file"
+  FILE_NAME="$file_name" HASH="$hash" perl -0pi -e 's/(\Q$ENV{FILE_NAME}\E";\n\s*hash = )"sha256-[^"]+";/$1"$ENV{HASH}";/' "$target_file"
 }
 
 refresh_cargo_hash_if_present() {
@@ -248,7 +248,7 @@ refresh_cargo_hash_if_present() {
   fi
 
   echo "Detected cargoHash/vendorHash; refreshing via nix build hash mismatch"
-  perl -0pi -e 's/(\n\s*(?:cargoHash|vendorHash) = )(?:lib\.fakeHash|"sha256-[^"]+");/$1 . "lib.fakeHash;"/e' "$target_file"
+  perl -0pi -e 's/(\n\s*(?:cargoHash|vendorHash) = )(?:lib\.fakeHash|"sha256-[^"]+");/${1}lib.fakeHash;/' "$target_file"
 
   local log_file="${tmpdir}/cargo-hash.log"
   local status
@@ -266,7 +266,7 @@ refresh_cargo_hash_if_present() {
     exit 1
   fi
 
-  CARGO_HASH="$cargo_hash" perl -0pi -e 's/(\n\s*(?:cargoHash|vendorHash) = )(?:lib\.fakeHash|"sha256-[^"]+");/$1 . "\"" . $ENV{CARGO_HASH} . "\";"/e' "$target_file"
+  CARGO_HASH="$cargo_hash" perl -0pi -e 's/(\n\s*(?:cargoHash|vendorHash) = )(?:lib\.fakeHash|"sha256-[^"]+");/$1"$ENV{CARGO_HASH}";/' "$target_file"
 }
 
 rusty_v8_files=()
@@ -283,9 +283,9 @@ for file_name in "${rusty_v8_files[@]}"; do
   rusty_v8_hashes["$file_name"]="$(prefetch_rusty_v8_hash "$file_name")"
 done
 
-VERSION="$version" perl -0pi -e 's/(\n\s*version = )"[^"]+";/$1 . "\"" . $ENV{VERSION} . "\";"/e' "$target_file"
-SOURCE_HASH="$source_hash" perl -0pi -e 's/(src = fetchFromGitHub \{.*?\n\s*hash = )"sha256-[^"]+";/$1 . "\"" . $ENV{SOURCE_HASH} . "\";"/se' "$target_file"
-RUSTY_V8_VERSION="$rusty_v8_version" perl -0pi -e 's/(\n\s*rustyV8Version = )"[^"]+";/$1 . "\"" . $ENV{RUSTY_V8_VERSION} . "\";"/e' "$target_file"
+VERSION="$version" perl -0pi -e 's/(\n\s*version = )"[^"]+";/$1"$ENV{VERSION}";/' "$target_file"
+SOURCE_HASH="$source_hash" perl -0pi -e 's/(src = fetchFromGitHub \{.*?\n\s*hash = )"sha256-[^"]+";/$1"$ENV{SOURCE_HASH}";/s' "$target_file"
+RUSTY_V8_VERSION="$rusty_v8_version" perl -0pi -e 's/(\n\s*rustyV8Version = )"[^"]+";/$1"$ENV{RUSTY_V8_VERSION}";/' "$target_file"
 for file_name in "${rusty_v8_files[@]}"; do
   replace_rusty_v8_hash "$file_name" "${rusty_v8_hashes[$file_name]}"
 done
